@@ -1,4 +1,4 @@
-import { Injectable, signal, OnDestroy } from '@angular/core';
+import { Injectable, signal, OnDestroy, computed } from '@angular/core';
 
 @Injectable({
   providedIn: 'root'
@@ -10,6 +10,13 @@ export class ScreensizeService implements OnDestroy {
     width: window.innerWidth,
     height: window.innerHeight
   });
+  // Computed properties for responsive design
+  readonly isMobile = computed(() => this.screenSize().width < 768);
+  readonly isTablet = computed(() =>
+    this.screenSize().width >= 768 &&
+    this.screenSize().width < 1024
+  );
+  readonly isDesktop = computed(() => this.screenSize().width >= 1024);
 
   constructor() {
     this.initResizeObserver();

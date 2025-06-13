@@ -8,19 +8,15 @@ import {
   computed,
   OnDestroy,
   signal,
-  DestroyRef, ChangeDetectorRef
+  DestroyRef, ChangeDetectorRef,
+  effect
 } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { gsap } from 'gsap';
 import { Draggable } from 'gsap/Draggable';
 import { ChartComponent } from '../chart/chart.component';
 import { ScreensizeService } from '../screensize.service';
 import { MatIconModule } from '@angular/material/icon';
 import { DataService } from '../data.service';
-interface DragItemPosition {
-  itemId: string;
-  placeholderId: string;
-}
 import { CommonModule } from '@angular/common';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
@@ -50,11 +46,11 @@ interface PlaceholderObject {
 const ANIMATION_CONFIG: DragAnimationConfig = {
   onPress: {
     scale: 1.3,
-    rotation: { min: -1, max: 1 },
+    rotation: { min: -2, max: 2 },
     duration: 0.1
   },
   onDrag: {
-    highlightScale: 1.6,
+    highlightScale: 1.4,
     placeholderScale: 1.2,
     highlightColor: "#5eff5e",
     duration: 0.2
@@ -154,19 +150,18 @@ export class PlaygroundComponent implements AfterViewInit, OnDestroy {
   _instructionText = ["Welcome to an impedance measurement simulation!",
     "Begin by dragging devices into the socket.",
     "Well done! Add more devices to observe changes in the results.",
-    "Now, check out the measurement results to see what's happening!"
+    "Drag, drop, observe!",
+    "Don't like something? Just remove it!",
+    "Now, check out the measurement results to see what's happening!",
+    "Cool right?"
   ]
-  // Computed properties for responsive design
-  readonly isMobile = computed(() => this.screensize.screenSize().width < 768);
-  readonly isTablet = computed(() =>
-    this.screensize.screenSize().width >= 768 &&
-    this.screensize.screenSize().width < 1024
-  );
-  readonly isDesktop = computed(() => this.screensize.screenSize().width >= 1024);
+  
   readonly placeholderObject = computed<PlaceholderObject>(() =>
     Object.fromEntries(this.placeholderOccupancy()) as PlaceholderObject
   );
 
+  private tl = gsap.timeline()
+  private dragState = signal(1)
   // State management
   private readonly itemPositions = signal<Map<string, string>>(new Map());
   private readonly placedItems = signal<Set<string>>(new Set());
@@ -177,6 +172,22 @@ export class PlaygroundComponent implements AfterViewInit, OnDestroy {
 
   // Animation counters
   private dragCounters = new Map<string, number>();
+  private selectedInstructionText = computed(() => {
+    const dragState = this.dragState()
+    let text = ''
+
+    switch (dragState) {
+      case 1:  text = this._instructionText[1]; break;
+      case 2:  text = this._instructionText[2]; break;
+      case 4:  text = this._instructionText[3]; break;
+      case 5:  text = this._instructionText[4]; break;
+      case 8:  text = this._instructionText[5]; break;
+      case 12: text = this._instructionText[6]; break;
+    }
+
+    return text
+  })
+  private instructionElementSignal = signal<ElementRef|undefined>(undefined)
 
   constructor(
     private screensize: ScreensizeService,
@@ -185,12 +196,37 @@ export class PlaygroundComponent implements AfterViewInit, OnDestroy {
     private sanitizer: DomSanitizer,
     private cdr: ChangeDetectorRef
   ) {
+    effect(() => {
+      const selectedInstructionText = this.selectedInstructionText()
+      const element = this.instructionElementSignal()?.nativeElement
+
+      if (!element) {
+        return
+      }
+
+      this.tl.fromTo(element,
+        {
+          duration: 1.5,
+          opacity: 0,
+          y: -20,
+          ease: 'expo.out',
+          onComplete: () => {
+            element.textContent = selectedInstructionText;
+          }
+        },
+        {
+          duration: 1.5,
+          opacity: 1,
+          y: 0,
+          ease: 'expo.out'
+        });
+    });
     gsap.registerPlugin(Draggable);
   }
 
   ngAfterViewInit(): void {
-    this.changeText(this.instructionText.nativeElement, this._instructionText[0])
     this.initializeDragAndDrop();
+    this.instructionElementSignal.set(this.instructionText)
   }
 
   ngOnDestroy(): void {
@@ -204,39 +240,29 @@ export class PlaygroundComponent implements AfterViewInit, OnDestroy {
     const placeholdersArray = this.placeholders.toArray();
 
     // Initialize item positions
-    this.initializeItemPositions(dragItemsArray);
-
-    // Create draggable instances
-    this.createDraggableInstances(dragItemsArray, placeholdersArray);
-  }
-
-  private initializeItemPositions(items: ElementRef<HTMLDivElement>[]): void {
     const positions = new Map<string, string>();
-    items.forEach(item => {
+    dragItemsArray.forEach(item => {
       const itemId = this.getItemId(item.nativeElement);
       positions.set(itemId, '');
       this.dragCounters.set(itemId, 0);
+
+
     });
     this.itemPositions.set(positions);
 
-    // Initialize placeholder occupancy
-    this.placeholderOccupancy.set(new Map());
-  }
-
-  private createDraggableInstances(
-    items: ElementRef<HTMLDivElement>[],
-    placeholders: ElementRef<HTMLDivElement>[]
-  ): void {
-    items.forEach((item, index) => {
+    // Create draggable instances
+    dragItemsArray.forEach((item, index) => {
       const draggableInstance = Draggable.create(item.nativeElement, {
         type: 'x,y',
-        onPress: () => this.handleDragStart(item, items),
-        onDrag: () => this.handleDrag(item, placeholders),
-        onRelease: () => this.handleDragEnd(item, items, placeholders, index)
+        onPress: () => this.handleDragStart(item, dragItemsArray),
+        onDrag: () => this.handleDrag(item, placeholdersArray),
+        onRelease: () => this.handleDragEnd(item, dragItemsArray, placeholdersArray, index)
       })[0];
 
       this.draggableInstances.push(draggableInstance);
+      
     });
+    
   }
 
   private handleDragStart(
@@ -253,6 +279,7 @@ export class PlaygroundComponent implements AfterViewInit, OnDestroy {
       rotate: `random(${rotation.min}, ${rotation.max})`,
       zIndex: 100
     });
+    
 
     // Fade other items
     this.animateItemOpacity(allItems, currentItem);
@@ -292,7 +319,9 @@ export class PlaygroundComponent implements AfterViewInit, OnDestroy {
 
     if (!collisionFound) {
       this.handleNoCollision(currentItem, placeholders, itemId);
+      console.log('No collision')
     }
+    
   }
 
   private handleDragEnd(
@@ -314,6 +343,7 @@ export class PlaygroundComponent implements AfterViewInit, OnDestroy {
 
       if (isColliding && !placed) {
         this.handleSuccessfulPlacement(currentItem, placeholder, itemId, allItems);
+        this.dragState.set(this.dragState() + 1)
         placed = true;
       }
     });
@@ -321,7 +351,6 @@ export class PlaygroundComponent implements AfterViewInit, OnDestroy {
     // If not placed, reset to original position
     if (!placed) {
       // console.log(this.placeholderObject())
-
       const foundKey = Object.keys(this.placeholderObject()).find(key => this.placeholderObject()[key] === currentItem.nativeElement.className);
       if (foundKey) {
         this.updatePlaceholderOccupancy(foundKey, ''),
@@ -332,19 +361,20 @@ export class PlaygroundComponent implements AfterViewInit, OnDestroy {
             ease: 'power2.out',
             backgroundColor: "#e9ffef",
           })
+          console.log(foundKey,"foundkey")
+          this.removePlaceholderItem(foundKey)
       }
 
       this.resetItemPosition(currentItem, itemId);
       this.dataService.setPlacedItems(Array.from(this.placeholderOccupancy()))
       console.log(this.dataService.getPlacedItems())
+      console.log(this._placeholders)
       gsap.to(currentItem.nativeElement.querySelector('.icon'), { opacity: 1, duration: 0.3 });
-
-      //////////////////////// here 
-
     }
 
     // Reset all items opacity and rotation
     this.resetAllItemsAppearance(allItems);
+    
   }
 
   private handleCollision(
@@ -383,8 +413,8 @@ export class PlaygroundComponent implements AfterViewInit, OnDestroy {
         scale: 1,
         ease: 'power4.out',
         backgroundColor: DEFAULT_COLORS.NORMAL,
+        opacity: 1,
       });
-
       placeholders.forEach(placeholder => {
         if (!this.placeholderOccupancy().has(placeholder.nativeElement.className)) {
           gsap.to(placeholder.nativeElement, {
@@ -392,7 +422,11 @@ export class PlaygroundComponent implements AfterViewInit, OnDestroy {
             scale: 1,
             ease: 'power2.out',
             backgroundColor: "#e9ffef",
-            onComplete: () => this.removePlaceholderItem(placeholder.nativeElement.className)
+            onComplete: () => {
+            this.removePlaceholderItem(placeholder.nativeElement.className)
+            // gsap.to(placeholder.nativeElement.querySelector('.icon'), { opacity: 0, duration: 0.1 });
+            gsap.to(item.nativeElement.querySelector('.icon'), { opacity: 1, duration: 0.3 });
+            }
           });
         } else {
           gsap.to(placeholder.nativeElement, {
@@ -441,6 +475,8 @@ export class PlaygroundComponent implements AfterViewInit, OnDestroy {
     // Animate successful placement
     const { duration, successScale, successColor } = ANIMATION_CONFIG.onRelease;
 
+    // const itemRect = item.nativeElement.getBoundingClientRect();
+    // const placeholderRect = placeholder.nativeElement.getBoundingClientRect();
     gsap.to(item.nativeElement, {
       duration: 0.4,
       opacity: 0,
@@ -541,6 +577,8 @@ export class PlaygroundComponent implements AfterViewInit, OnDestroy {
       rotate: 0,
       ease: 'elastic.out(.45)'
     });
+
+    
   }
 
   private updateItemPosition(itemId: string, placeholderId: string): void {
@@ -627,25 +665,6 @@ export class PlaygroundComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  private changeText(element: HTMLElement, text: string) {
-    if (element.textContent) {
-      gsap.to(element, {
-        duration: 0.5,
-        opacity: 0,
-        y: -20,
-        onComplete: () => {
-          element.textContent = text;
-
-          gsap.to(element, {
-            duration: 0.5,
-            opacity: 1,
-            y: 0
-          });
-        }
-      });
-    }
-
-  }
   private getItemId(element: HTMLElement): string {
     return element.className.slice(0, 6) || element.id || `item-${Math.random()}`;
   }
