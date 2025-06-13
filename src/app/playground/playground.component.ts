@@ -85,6 +85,8 @@ export class PlaygroundComponent implements AfterViewInit, OnDestroy {
   @ViewChildren('dragItem') dragItems!: QueryList<ElementRef<HTMLDivElement>>;
   @ViewChildren('placeholder') placeholders!: QueryList<ElementRef<HTMLDivElement>>;
   @ViewChild('instructionText', { static: false }) instructionText!: ElementRef<HTMLDivElement>;
+  @ViewChild('popupContent') popupContentRef!: ElementRef;
+  @ViewChild('popupOverlay') popupOverlayRef!: ElementRef;
 
   items = [
     {
@@ -162,6 +164,7 @@ export class PlaygroundComponent implements AfterViewInit, OnDestroy {
 
   private tl = gsap.timeline()
   private dragState = signal(1)
+  showPopup = false;
   // State management
   private readonly itemPositions = signal<Map<string, string>>(new Map());
   private readonly placedItems = signal<Set<string>>(new Set());
@@ -685,7 +688,74 @@ export class PlaygroundComponent implements AfterViewInit, OnDestroy {
     // Clear maps and sets
     this.dragCounters.clear();
   }
+   openPopup() {
+    if (this.showPopup) return;
+    this.showPopup = true;
+    // Reset style before animation
+    gsap.set([this.popupOverlayRef.nativeElement, this.popupContentRef.nativeElement], {
+        opacity: 0,
+        overwrite: 'auto'
+    });
+    gsap.set(this.popupContentRef.nativeElement, {
+        y: -50, 
+        scale: 0.95
+    });
 
+    // Use requestAnimationFrame to ensure styles are applied before starting the animation
+    requestAnimationFrame(() => {
+        const tl = gsap.timeline();
+
+        // Animation overlay
+        tl.to(this.popupOverlayRef.nativeElement, {
+            opacity: 1,
+            duration: 0.4,
+            ease: 'power3.out'
+        });
+
+        // Animation content
+        tl.to(this.popupContentRef.nativeElement, {
+            y: 0,
+            scale: 1, 
+            opacity: 1,
+            duration: 0.5,
+            ease: 'back.out(1.2)'
+        }, 0.15); 
+    });
+}
+
+closePopup() {
+    const tl = gsap.timeline({
+        onComplete: () => {
+            this.showPopup = false;
+            // Reset style for next open
+            gsap.set([this.popupOverlayRef.nativeElement, this.popupContentRef.nativeElement], {
+                opacity: 0,
+                y: -50,
+                scale: 0.95,
+                overwrite: 'auto'
+            });
+        }
+    });
+
+    // Animation content
+    tl.to(this.popupContentRef.nativeElement, {
+        y: -30,
+        scale: 0.95, 
+        opacity: 0,
+        duration: 0.35, 
+        ease: 'power3.in'
+    });
+
+    // Animation overlay
+    tl.to(this.popupOverlayRef.nativeElement, {
+        opacity: 0,
+        duration: 0.4,
+        ease: 'power3.out'
+    }, 0.1);
+}
+  onPopupClick(event: MouseEvent) {
+    event.stopPropagation();
+  }
   // Public methods 
   public getPlacedItems(): Set<string> {
     return this.placedItems();

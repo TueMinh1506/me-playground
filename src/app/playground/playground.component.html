@@ -174,7 +174,17 @@
         <div class="placeholders-area">
             <div class="overlap">
                 <div class="electric-line"></div>
-                <div class="ONIS" #ONIS>
+                <div class="ONIS" #ONIS (click)="openPopup()">
+                    <!-- Popup -->
+                    <div *ngIf="showPopup" #popupOverlay class="popup-overlay">
+                        <div #popupContent class="popup-content" (click)="onPopupClick($event)">
+                            <div class="ONISdescript">
+                            </div>
+                            <p class="description">Das ONIS (Online Network Impedance Spectrometer) ist ein hochmodernes Gerät, das für hochfrequente Netzqualitäts- und Netzimpedanzmessungen bis zu 500 kHz entwickelt wurde.</p>
+                            <button (click)="closePopup()">Close</button>
+                        </div>
+                    </div>
+
                     <div class="overlap-2">
                     </div>
                 </div>
