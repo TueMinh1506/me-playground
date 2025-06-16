@@ -1,2 +1,12 @@
-<app-playground />
+@if (this.loading()) {
+    <app-loading
+  [text]="'morEnergy'"
+  [duration]="1000"
+  [primaryColor]="'#00ff00'"
+  [autoStart]="true"
+  (progressChange)="onProgress($event)"
+  (complete)="onComplete()"
+></app-loading>
+}
+@if (this.loading() == false){<app-playground />}
 <router-outlet />

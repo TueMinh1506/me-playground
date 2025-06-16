@@ -1,0 +1,39 @@
+.loader-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-family: Arial, sans-serif;
+}
+
+.karaoke-text {
+  position: relative;
+  font-size: 3rem;
+  font-weight: bold;
+  color: #ccc;
+  --fill-width: 0%;
+}
+
+.karaoke-text::after {
+  content: attr(data-text);
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: var(--primary-color, #007808);
+  width: var(--fill-width);
+  overflow: hidden;
+  white-space: nowrap;
+  transition: width 0.3s ease;
+}
+
+.svg-container {
+  width: 200px;
+  height: 200px;
+  margin-top: 20px;
+  overflow: visible;
+}
+
+.svg-content {
+  fill: var(--primary-color, #007808);
+}

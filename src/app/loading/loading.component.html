@@ -1,0 +1,28 @@
+<!-- <div #loaderContainer *ngIf="isVisible" class="loader-container">
+  <div #karaokeText class="karaoke-text" [attr.data-text]="text">
+    {{ text }}
+  </div>
+  <svg class="heart-container" width="100" height="100" viewBox="0 0 100 100">
+    <defs>
+      <clipPath id="heartClip">
+        <rect #heartFill id="heartFillRect" x="0" y="100" width="100" height="100" />
+      </clipPath>
+    </defs>
+    <path class="heart" d="M50 30 C40 10, 20 10, 10 30 C0 50, 20 70, 50 90 C80 70, 100 50, 90 30 C80 10, 60 10, 50 30" clip-path="url(#heartClip)" />
+  </svg>
+</div> -->
+
+<div #loaderContainer *ngIf="isVisible" class="loader-container">
+  <div #karaokeText class="karaoke-text" [attr.data-text]="text">
+    {{ text }}
+  </div>
+  <svg class="svg-container" width="200" height="200" viewBox="0 0 200 97">
+    <defs>
+      <clipPath id="svgClip">
+        <rect #svgFill id="svgFillRect" x="0" y="200" width="200" height="97" />
+      </clipPath>
+    </defs>
+    <path class="svg-content" d="M0 84.89V13.9036V13.9033C3.31273e-05 8.70938 5.53131e-05 5.24663 5.19413 1.78393C13.594 -3.81597 20.7763 5.24655 22.5079 8.70948L38.0903 36.4115C40.3988 40.4514 44.0983 46.7996 48.4783 46.7996C51.9409 46.7996 55.899 41.6055 58.8668 36.4115C65.7921 24.2917 73.4104 4.55413 83.1061 1.78393C92.8018 -0.986272 95.2257 11.0179 95.2257 17.3663V84.89C95.2257 94.5857 87.146 97.0097 83.1061 97.0097H13.851C2.7702 97.0097 0 88.9299 0 84.89Z" clip-path="url(#svgClip)" />
+    <path class="svg-content" d="M115.11 0.891842L186.096 0.891845L186.097 0.891845C191.291 0.891878 194.753 0.891901 198.216 6.08598C203.816 14.4859 194.753 21.6682 191.291 23.3997L163.588 38.9821C159.549 41.2906 153.2 44.9901 153.2 49.3702C153.2 52.8327 158.395 56.7908 163.588 59.7587C175.708 66.684 195.446 74.3022 198.216 83.9979C200.986 93.6936 188.982 96.1176 182.634 96.1176L115.11 96.1176C105.414 96.1176 102.99 88.0378 102.99 83.9979L102.99 14.7429C102.99 3.66204 111.07 0.891842 115.11 0.891842Z" clip-path="url(#svgClip)" />
+  </svg>
+</div>
